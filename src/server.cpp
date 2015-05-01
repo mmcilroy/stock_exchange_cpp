@@ -4,7 +4,7 @@
 
 #include <thread>
 
-io io;
+//io io;
 
 void input_thread( event_publisher* inp )
 {

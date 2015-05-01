@@ -7,25 +7,18 @@ const size_t event_size = 128;
 struct event
 {
 public:
-    char* get_header_buf();
+    char* buffer();
 
-    header get_header();
-
-    void set_header( header h );
-
-    char* get_body_buf();
+    header header();
 
     template< typename T >
-    T get_body();
-
-    template< typename T >
-    void set_body( T b );
-
-    event& operator=( event& e );
+    T body();
 
     size_t size();
 
     void zero();
+
+    event& operator=( event& e );
 
 private:
     char buf_[ event_size ];
