@@ -8,6 +8,7 @@ login = {
 }
 
 order_parameters = {
+    { name='symbol', type='char', length='8' },
     { name='type', type='uint16_t' },
     { name='side', type='uint16_t' },
     { name='quantity', type='uint32_t' },
