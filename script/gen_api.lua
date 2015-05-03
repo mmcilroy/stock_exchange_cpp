@@ -81,6 +81,25 @@ function gen_unpack( names )
     end
 end
 
+function gen_ostream( names )
+    for key,name in pairs( names ) do
+        print( 'std::ofstream& operator<<( const std::ofstream& out, const ' .. name .. '& in )' )
+        print( '{' )
+        local i=0
+        for key,field in pairs( _G[name] ) do
+            s = '    out'
+            if i>0 then
+                s = s .. ' << \", \"'
+            end
+            s = s .. ' << \"' .. field['name'] .. '=\" << in.' .. field['name'] .. '_;'
+            i=i+1
+            print( s )
+        end
+        print( '    return out;' )
+        print( '};\n' )
+    end
+end
+
 function gen_union( names )
     print( 'union events' )
     print( '{' )
