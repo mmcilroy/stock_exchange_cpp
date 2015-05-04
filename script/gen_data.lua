@@ -4,7 +4,7 @@ header = {
 }
 
 login = {
-    { name='user_id', type='uint32_t' }
+    { name='user_id', type='char', length="16" }
 }
 
 order_parameters = {

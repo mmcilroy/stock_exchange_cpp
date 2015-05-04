@@ -1,8 +1,7 @@
 #pragma once
 
-#include <cstdint>
-#include <cstdlib>
 #include <cstring>
+#include <iostream>
 
 template< typename T >
 size_t pack( void* buffer, size_t offset, const T* source, size_t length=1 )

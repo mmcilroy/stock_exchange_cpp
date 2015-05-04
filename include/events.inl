@@ -6,7 +6,7 @@ struct header
 
 struct login
 {
-    uint32_t user_id_;
+    char user_id_[16];
 };
 
 struct order_parameters
@@ -72,13 +72,13 @@ inline size_t pack( void* buffer, size_t offset, const header& source )
 
 inline size_t pack( void* buffer, size_t offset, const login& source )
 {
-    offset = ::pack( buffer, offset, &source.user_id_ );
+    offset = ::pack( buffer, offset, source.user_id_, 16 );
     return offset;
 }
 
 inline size_t pack( void* buffer, size_t offset, const order_parameters& source )
 {
-    offset = ::pack( buffer, offset, &source.symbol_, 8 );
+    offset = ::pack( buffer, offset, source.symbol_, 8 );
     offset = ::pack( buffer, offset, &source.type_ );
     offset = ::pack( buffer, offset, &source.side_ );
     offset = ::pack( buffer, offset, &source.quantity_ );
@@ -146,13 +146,13 @@ inline size_t unpack( const void* buffer, size_t offset, header& target )
 
 inline size_t unpack( const void* buffer, size_t offset, login& target )
 {
-    offset = ::unpack( buffer, offset, &target.user_id_ );
+    offset = ::unpack( buffer, offset, target.user_id_, 16 );
     return offset;
 }
 
 inline size_t unpack( const void* buffer, size_t offset, order_parameters& target )
 {
-    offset = ::unpack( buffer, offset, &target.symbol_, 8 );
+    offset = ::unpack( buffer, offset, target.symbol_, 8 );
     offset = ::unpack( buffer, offset, &target.type_ );
     offset = ::unpack( buffer, offset, &target.side_ );
     offset = ::unpack( buffer, offset, &target.quantity_ );
@@ -212,7 +212,7 @@ inline size_t unpack( const void* buffer, size_t offset, pull_order& target )
 }
 
 typedef packed_buffer< header, sizeof(uint16_t) + sizeof(uint16_t) > packed_header;
-typedef packed_buffer< login, sizeof(uint32_t) > packed_login;
+typedef packed_buffer< login, 16*sizeof(char) > packed_login;
 typedef packed_buffer< order_parameters, 8*sizeof(char) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint32_t) > packed_order_parameters;
 typedef packed_buffer< order_rejected, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_rejected;
 typedef packed_buffer< order_placed, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_placed;
@@ -234,21 +234,24 @@ union events
     packed_pull_order pull_order_;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const header& in )
+std::ostream& operator<<( std::ostream& out, const header& in )
 {
+    out << "header: ";
     out << "length=" << in.length_;
     out << ", " << "type=" << in.type_;
     return out;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const login& in )
+std::ostream& operator<<( std::ostream& out, const login& in )
 {
+    out << "login: ";
     out << "user_id=" << in.user_id_;
     return out;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const order_parameters& in )
+std::ostream& operator<<( std::ostream& out, const order_parameters& in )
 {
+    out << "order_parameters: ";
     out << "symbol=" << in.symbol_;
     out << ", " << "type=" << in.type_;
     out << ", " << "side=" << in.side_;
@@ -257,24 +260,27 @@ std::ofstream& operator<<( const std::ofstream& out, const order_parameters& in 
     return out;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const order_rejected& in )
+std::ostream& operator<<( std::ostream& out, const order_rejected& in )
 {
+    out << "order_rejected: ";
     out << "user_id=" << in.user_id_;
     out << ", " << "transaction_id=" << in.transaction_id_;
     out << ", " << "parameters=" << in.parameters_;
     return out;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const order_placed& in )
+std::ostream& operator<<( std::ostream& out, const order_placed& in )
 {
+    out << "order_placed: ";
     out << "user_id=" << in.user_id_;
     out << ", " << "transaction_id=" << in.transaction_id_;
     out << ", " << "parameters=" << in.parameters_;
     return out;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const order_pulled& in )
+std::ostream& operator<<( std::ostream& out, const order_pulled& in )
 {
+    out << "order_pulled: ";
     out << "user_id=" << in.user_id_;
     out << ", " << "transaction_id=" << in.transaction_id_;
     out << ", " << "leaves_quantity=" << in.leaves_quantity_;
@@ -282,8 +288,9 @@ std::ofstream& operator<<( const std::ofstream& out, const order_pulled& in )
     return out;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const order_executed& in )
+std::ostream& operator<<( std::ostream& out, const order_executed& in )
 {
+    out << "order_executed: ";
     out << "user_id=" << in.user_id_;
     out << ", " << "transaction_id=" << in.transaction_id_;
     out << ", " << "exec_price=" << in.exec_price_;
@@ -293,16 +300,18 @@ std::ofstream& operator<<( const std::ofstream& out, const order_executed& in )
     return out;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const place_order& in )
+std::ostream& operator<<( std::ostream& out, const place_order& in )
 {
+    out << "place_order: ";
     out << "user_id=" << in.user_id_;
     out << ", " << "transaction_id=" << in.transaction_id_;
     out << ", " << "parameters=" << in.parameters_;
     return out;
 };
 
-std::ofstream& operator<<( const std::ofstream& out, const pull_order& in )
+std::ostream& operator<<( std::ostream& out, const pull_order& in )
 {
+    out << "pull_order: ";
     out << "user_id=" << in.user_id_;
     out << ", " << "transaction_id=" << in.transaction_id_;
     return out;

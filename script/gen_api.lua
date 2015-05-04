@@ -46,7 +46,7 @@ function gen_pack( names )
                 print( '    offset = ::pack( buffer, offset, &source.' .. field['name'] .. '_ );' )
             else
                 if _G[field['type']] == nil then
-                    print( '    offset = ::pack( buffer, offset, &source.' .. field['name'] .. '_, ' .. field['length'] .. ' );' )
+                    print( '    offset = ::pack( buffer, offset, source.' .. field['name'] .. '_, ' .. field['length'] .. ' );' )
                 else
                     for i=1,field['length'] do
                         print( '    offset = ::pack( buffer, offset, &source.' .. field['name'] .. '_ );' )
@@ -68,7 +68,7 @@ function gen_unpack( names )
                 print( '    offset = ::unpack( buffer, offset, &target.' .. field['name'] .. '_ );' )
             else
                 if _G[field['type']] == nil then
-                    print( '    offset = ::unpack( buffer, offset, &target.' .. field['name'] .. '_, ' .. field['length'] .. ' );' )
+                    print( '    offset = ::unpack( buffer, offset, target.' .. field['name'] .. '_, ' .. field['length'] .. ' );' )
                 else
                     for i=1,field['length'] do
                         print( '    offset = ::unpack( buffer, offset, &target.' .. field['name'] .. '_ );' )
@@ -83,8 +83,9 @@ end
 
 function gen_ostream( names )
     for key,name in pairs( names ) do
-        print( 'std::ofstream& operator<<( const std::ofstream& out, const ' .. name .. '& in )' )
+        print( 'std::ostream& operator<<( std::ostream& out, const ' .. name .. '& in )' )
         print( '{' )
+        print( '    out << \"' .. name .. ': \";' )
         local i=0
         for key,field in pairs( _G[name] ) do
             s = '    out'
