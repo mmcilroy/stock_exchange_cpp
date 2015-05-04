@@ -1,6 +1,5 @@
 #include "events.hpp"
 #include <cassert>
-#include <cstring>
 
 template< typename T, typename U >
 void test( T& a )
@@ -18,10 +17,10 @@ void test( T& a )
 void fill_order_parameters( order_parameters& op )
 {
     strcpy( op.symbol_, "test" );
-    op.type_ = 1;
-    op.side_ = 2;
-    op.quantity_ = 3;
-    op.price_ = 4;
+    op.type_ = 6;
+    op.side_ = 7;
+    op.quantity_ = 8;
+    op.price_ = 9;
 }
 
 int main()
@@ -76,21 +75,23 @@ int main()
         test< order_placed, packed_order_placed >( p );
     }
 
-/*
-order_pulled = {
-    { name='user_id', type='uint32_t' },
-    { name='transaction_id', type='uint32_t' },
-    { name='leaves_quantity', type='uint32_t' },
-    { name='parameters', type='order_parameters' }
-}
+    {
+        order_pulled p;
+        p.user_id_ = 1;
+        p.transaction_id_ = 2;
+        p.leaves_quantity_ = 3;
+        fill_order_parameters( p.parameters_ );
+        test< order_pulled, packed_order_pulled >( p );
+    }
 
-order_executed = {
-    { name='user_id', type='uint32_t' },
-    { name='transaction_id', type='uint32_t' },
-    { name='exec_price', type='uint32_t' },
-    { name='exec_quantity', type='uint32_t' },
-    { name='leaves_quantity', type='uint32_t' },
-    { name='parameters', type='order_parameters' }
-}
-*/
+    {
+        order_executed p;
+        p.user_id_ = 1;
+        p.transaction_id_ = 2;
+        p.exec_price_ = 3;
+        p.exec_quantity_ = 4;
+        p.leaves_quantity_ = 5;
+        fill_order_parameters( p.parameters_ );
+        test< order_executed, packed_order_executed >( p );
+    }
 }
