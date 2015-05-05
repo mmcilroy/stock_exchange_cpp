@@ -1,10 +1,10 @@
 #pragma once
 
-#include "event.hpp"
+#include "events.hpp"
 #include "publisher.hpp"
 
-typedef publisher< event, blocking_sequence > event_publisher;
-typedef subscriber< event, blocking_sequence > event_subscriber;
+typedef publisher< packed_event, blocking_sequence > event_publisher;
+typedef subscriber< packed_event, blocking_sequence > event_subscriber;
 
 class io
 {
@@ -15,7 +15,7 @@ public:
 
     void accept( uint16_t port, event_publisher* inp );
 
-    void send( const event& );
+    //void send( const event& );
 
 private:
     class impl; std::unique_ptr< impl > impl_;

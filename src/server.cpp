@@ -1,10 +1,8 @@
 #include "io.hpp"
-#include "event.hpp"
-#include "publisher.hpp"
 
 #include <thread>
 
-//io io;
+io io;
 
 void input_thread( event_publisher* inp )
 {
@@ -13,26 +11,32 @@ void input_thread( event_publisher* inp )
 
 void journal_thread( event_subscriber* inp )
 {
+    /*
     inp->dispatch( [&]( const event& e, size_t r ) {
         std::cout << "journal: " << r << ", " << e << std::endl;
         return false;
     } );
+    */
 }
 
 void replicate_thread( event_subscriber* inp )
 {
+    /*
     inp->dispatch( [&]( const event& e, size_t r ) {
         std::cout << "replicate: " << r << ", " << e << std::endl;
         return false;
     } );
+    */
 }
 
 void business_thread( event_subscriber* inp, event_publisher* out )
 {
+    /*
     inp->dispatch( [&]( const event& e, size_t r ) {
         std::cout << "business: " << r << ", " << e << std::endl;
         return false;
     } );
+    */
 }
 
 void output_thread( event_subscriber* out )

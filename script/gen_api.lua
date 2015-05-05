@@ -1,15 +1,18 @@
 function gen_struct( names )
+    local id=0
     for key,name in pairs( names ) do
         print( 'struct ' .. name )
         print( '{' )
+        print( '    static constexpr uint16_t id = ' .. id .. ';\n' )
         for key,field in pairs( _G[name] ) do
             if field['length'] == nil then
                 print( '    ' .. field['type'] .. ' ' .. field['name'] .. '_;' )
             else
                 print( '    ' .. field['type'] .. ' ' .. field['name'] .. '_[' .. field['length'] .. '];' )
             end
-        end    
+        end
         print( '};\n' )
+        id=id+1
     end
 end
 
@@ -83,7 +86,7 @@ end
 
 function gen_ostream( names )
     for key,name in pairs( names ) do
-        print( 'std::ostream& operator<<( std::ostream& out, const ' .. name .. '& in )' )
+        print( 'inline std::ostream& operator<<( std::ostream& out, const ' .. name .. '& in )' )
         print( '{' )
         print( '    out << \"' .. name .. ': \";' )
         local i=0
@@ -102,7 +105,16 @@ function gen_ostream( names )
 end
 
 function gen_union( names )
-    print( 'union events' )
+    print( 'union event' )
+    print( '{' )
+    for key,name in pairs( names ) do
+        print( '    ' .. name .. ' ' .. name .. '_;' )
+    end
+    print( '};\n' )
+end
+
+function gen_packed_union( names )
+    print( 'union packed_event' )
     print( '{' )
     for key,name in pairs( names ) do
         print( '    packed_' .. name .. ' ' .. name .. '_;' )

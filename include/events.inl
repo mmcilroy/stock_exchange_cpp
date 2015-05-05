@@ -1,16 +1,22 @@
 struct header
 {
+    static constexpr uint16_t id = 0;
+
     uint16_t length_;
     uint16_t type_;
 };
 
 struct login
 {
+    static constexpr uint16_t id = 1;
+
     char user_id_[16];
 };
 
 struct order_parameters
 {
+    static constexpr uint16_t id = 2;
+
     char symbol_[8];
     uint16_t type_;
     uint16_t side_;
@@ -20,6 +26,8 @@ struct order_parameters
 
 struct order_rejected
 {
+    static constexpr uint16_t id = 3;
+
     uint32_t user_id_;
     uint32_t transaction_id_;
     order_parameters parameters_;
@@ -27,6 +35,8 @@ struct order_rejected
 
 struct order_placed
 {
+    static constexpr uint16_t id = 4;
+
     uint32_t user_id_;
     uint32_t transaction_id_;
     order_parameters parameters_;
@@ -34,6 +44,8 @@ struct order_placed
 
 struct order_pulled
 {
+    static constexpr uint16_t id = 5;
+
     uint32_t user_id_;
     uint32_t transaction_id_;
     uint32_t leaves_quantity_;
@@ -42,6 +54,8 @@ struct order_pulled
 
 struct order_executed
 {
+    static constexpr uint16_t id = 6;
+
     uint32_t user_id_;
     uint32_t transaction_id_;
     uint32_t exec_price_;
@@ -52,6 +66,8 @@ struct order_executed
 
 struct place_order
 {
+    static constexpr uint16_t id = 7;
+
     uint32_t user_id_;
     uint32_t transaction_id_;
     order_parameters parameters_;
@@ -59,6 +75,8 @@ struct place_order
 
 struct pull_order
 {
+    static constexpr uint16_t id = 8;
+
     uint32_t user_id_;
     uint32_t transaction_id_;
 };
@@ -221,7 +239,20 @@ typedef packed_buffer< order_executed, sizeof(uint32_t) + sizeof(uint32_t) + siz
 typedef packed_buffer< place_order, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_place_order;
 typedef packed_buffer< pull_order, sizeof(uint32_t) + sizeof(uint32_t) > packed_pull_order;
 
-union events
+union event
+{
+    header header_;
+    login login_;
+    order_parameters order_parameters_;
+    order_rejected order_rejected_;
+    order_placed order_placed_;
+    order_pulled order_pulled_;
+    order_executed order_executed_;
+    place_order place_order_;
+    pull_order pull_order_;
+};
+
+union packed_event
 {
     packed_header header_;
     packed_login login_;
@@ -234,7 +265,7 @@ union events
     packed_pull_order pull_order_;
 };
 
-std::ostream& operator<<( std::ostream& out, const header& in )
+inline std::ostream& operator<<( std::ostream& out, const header& in )
 {
     out << "header: ";
     out << "length=" << in.length_;
@@ -242,14 +273,14 @@ std::ostream& operator<<( std::ostream& out, const header& in )
     return out;
 };
 
-std::ostream& operator<<( std::ostream& out, const login& in )
+inline std::ostream& operator<<( std::ostream& out, const login& in )
 {
     out << "login: ";
     out << "user_id=" << in.user_id_;
     return out;
 };
 
-std::ostream& operator<<( std::ostream& out, const order_parameters& in )
+inline std::ostream& operator<<( std::ostream& out, const order_parameters& in )
 {
     out << "order_parameters: ";
     out << "symbol=" << in.symbol_;
@@ -260,7 +291,7 @@ std::ostream& operator<<( std::ostream& out, const order_parameters& in )
     return out;
 };
 
-std::ostream& operator<<( std::ostream& out, const order_rejected& in )
+inline std::ostream& operator<<( std::ostream& out, const order_rejected& in )
 {
     out << "order_rejected: ";
     out << "user_id=" << in.user_id_;
@@ -269,7 +300,7 @@ std::ostream& operator<<( std::ostream& out, const order_rejected& in )
     return out;
 };
 
-std::ostream& operator<<( std::ostream& out, const order_placed& in )
+inline std::ostream& operator<<( std::ostream& out, const order_placed& in )
 {
     out << "order_placed: ";
     out << "user_id=" << in.user_id_;
@@ -278,7 +309,7 @@ std::ostream& operator<<( std::ostream& out, const order_placed& in )
     return out;
 };
 
-std::ostream& operator<<( std::ostream& out, const order_pulled& in )
+inline std::ostream& operator<<( std::ostream& out, const order_pulled& in )
 {
     out << "order_pulled: ";
     out << "user_id=" << in.user_id_;
@@ -288,7 +319,7 @@ std::ostream& operator<<( std::ostream& out, const order_pulled& in )
     return out;
 };
 
-std::ostream& operator<<( std::ostream& out, const order_executed& in )
+inline std::ostream& operator<<( std::ostream& out, const order_executed& in )
 {
     out << "order_executed: ";
     out << "user_id=" << in.user_id_;
@@ -300,7 +331,7 @@ std::ostream& operator<<( std::ostream& out, const order_executed& in )
     return out;
 };
 
-std::ostream& operator<<( std::ostream& out, const place_order& in )
+inline std::ostream& operator<<( std::ostream& out, const place_order& in )
 {
     out << "place_order: ";
     out << "user_id=" << in.user_id_;
@@ -309,7 +340,7 @@ std::ostream& operator<<( std::ostream& out, const place_order& in )
     return out;
 };
 
-std::ostream& operator<<( std::ostream& out, const pull_order& in )
+inline std::ostream& operator<<( std::ostream& out, const pull_order& in )
 {
     out << "pull_order: ";
     out << "user_id=" << in.user_id_;

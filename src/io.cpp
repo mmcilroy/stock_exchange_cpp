@@ -1,11 +1,8 @@
 #include "io.hpp"
-#include "event.hpp"
 
 #include <boost/asio.hpp>
 
 using boost::asio::ip::tcp;
-
-const size_t body_size = 256;
 
 class session : public std::enable_shared_from_this< session >
 {
@@ -13,7 +10,6 @@ public:
     session( tcp::socket socket, event_publisher* inp ) :
         socket_( std::move( socket ) ),
         inp_( inp ),
-        hdr_( event_.get_header() ),
         logged_on_( false )
     {
         std::cout << this << " new session" << std::endl;
@@ -28,11 +24,10 @@ public:
     {
         auto self( shared_from_this() );
 
-        event_.zero();
         boost::asio::async_read(
             socket_,
-            boost::asio::buffer( event_.get_header_buf(), header::size() ),
-            boost::asio::transfer_exactly( header::size() ),
+            boost::asio::buffer( packed_header_.buf_, packed_header_.size ),
+            boost::asio::transfer_exactly( packed_header_.size ),
             [ this, self ]( boost::system::error_code ec, std::size_t length ) {
                 if( !ec ) {
                     read_body();
@@ -44,39 +39,45 @@ public:
     {
         auto self( shared_from_this() );
 
-        std::cout << this << " " << hdr_ << std::endl;
+        header hdr;
+        unpack( packed_header_.buf_, 0, hdr );
+        std::cout << this << " " << hdr << std::endl;
 
         boost::asio::async_read(
             socket_,
-            boost::asio::buffer( event_.get_body_buf(), hdr_.length() ),
-            boost::asio::transfer_exactly( hdr_.length() ),
-            [ this, self ]( boost::system::error_code ec, std::size_t length ) {
+            boost::asio::buffer( &packed_event_, hdr.length_ ),
+            boost::asio::transfer_exactly( hdr.length_ ),
+            [ this, self, hdr ]( boost::system::error_code ec, std::size_t length ) {
                 if( !ec ) {
-                    process();
+                    process( hdr.type_ );
                 }
             } );
     }
 
-    void process()
+    void process( uint16_t type )
     {
         if( logged_on_ )
         {
-            if( hdr_.type() == place_order::id() )
+            if( type == place_order::id )
             {
-                place_order p = event_.get_body< place_order >();
+                place_order po;
+                unpack( &packed_event_, 0, po );
 
-                std::cout << this << " " << p << std::endl;
+                std::cout << this << " " << po << std::endl;
 
+                /*
                 inp_->publish( 1, [ this ]( event& e ) {
                     e = event_;
                 } );
+                */
             }
         }
         else
         {
-            if( hdr_.type() == login::id() )
+            if( type == login::id )
             {
-                login l = event_.get_body< login >();
+                login l;
+                unpack( &packed_event_, 0, l );
                 logged_on_ = true;
             }
             else
@@ -91,8 +92,9 @@ public:
     tcp::socket socket_;
 
     event_publisher* inp_;
-    event event_;
-    header hdr_;
+
+    packed_header packed_header_;
+    packed_event packed_event_;
 
     bool logged_on_;
 };
