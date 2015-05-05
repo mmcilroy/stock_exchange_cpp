@@ -103,21 +103,3 @@ function gen_ostream( names )
         print( '};\n' )
     end
 end
-
-function gen_union( names )
-    print( 'union event' )
-    print( '{' )
-    for key,name in pairs( names ) do
-        print( '    ' .. name .. ' ' .. name .. '_;' )
-    end
-    print( '};\n' )
-end
-
-function gen_packed_union( names )
-    print( 'union packed_event' )
-    print( '{' )
-    for key,name in pairs( names ) do
-        print( '    packed_' .. name .. ' ' .. name .. '_;' )
-    end
-    print( '};\n' )
-end

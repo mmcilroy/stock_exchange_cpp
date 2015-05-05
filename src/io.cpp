@@ -26,26 +26,25 @@ public:
 
         boost::asio::async_read(
             socket_,
-            boost::asio::buffer( packed_header_.buf_, packed_header_.size ),
-            boost::asio::transfer_exactly( packed_header_.size ),
+            boost::asio::buffer( header_.buf_, header_.size ),
+            boost::asio::transfer_exactly( header_.size ),
             [ this, self ]( boost::system::error_code ec, std::size_t length ) {
                 if( !ec ) {
-                    read_body();
+                    read_payload();
                 }
             } );
     }
 
-    void read_body()
+    void read_payload()
     {
         auto self( shared_from_this() );
 
         header hdr;
-        unpack( packed_header_.buf_, 0, hdr );
-        std::cout << this << " " << hdr << std::endl;
+        unpack( header_.buf_, 0, hdr );
 
         boost::asio::async_read(
             socket_,
-            boost::asio::buffer( &packed_event_, hdr.length_ ),
+            boost::asio::buffer( payload_.buf_, hdr.length_ ),
             boost::asio::transfer_exactly( hdr.length_ ),
             [ this, self, hdr ]( boost::system::error_code ec, std::size_t length ) {
                 if( !ec ) {
@@ -58,26 +57,17 @@ public:
     {
         if( logged_on_ )
         {
-            if( type == place_order::id )
-            {
-                place_order po;
-                unpack( &packed_event_, 0, po );
-
-                std::cout << this << " " << po << std::endl;
-
-                /*
-                inp_->publish( 1, [ this ]( event& e ) {
-                    e = event_;
-                } );
-                */
-            }
+            inp_->publish( 1, [ this ]( event& e ) {
+                e.header_ = header_;
+                e.payload_ = payload_;
+            } );
         }
         else
         {
             if( type == login::id )
             {
                 login l;
-                unpack( &packed_event_, 0, l );
+                unpack( payload_.buf_, 0, l );
                 logged_on_ = true;
             }
             else
@@ -93,8 +83,8 @@ public:
 
     event_publisher* inp_;
 
-    packed_header packed_header_;
-    packed_event packed_event_;
+    packed_header header_;
+    packed_payload payload_;
 
     bool logged_on_;
 };

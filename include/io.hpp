@@ -1,10 +1,6 @@
 #pragma once
 
 #include "events.hpp"
-#include "publisher.hpp"
-
-typedef publisher< packed_event, blocking_sequence > event_publisher;
-typedef subscriber< packed_event, blocking_sequence > event_subscriber;
 
 class io
 {

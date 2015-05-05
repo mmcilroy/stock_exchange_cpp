@@ -81,6 +81,16 @@ struct pull_order
     uint32_t transaction_id_;
 };
 
+typedef packed_buffer< header, sizeof(uint16_t) + sizeof(uint16_t) > packed_header;
+typedef packed_buffer< login, 16*sizeof(char) > packed_login;
+typedef packed_buffer< order_parameters, 8*sizeof(char) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint32_t) > packed_order_parameters;
+typedef packed_buffer< order_rejected, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_rejected;
+typedef packed_buffer< order_placed, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_placed;
+typedef packed_buffer< order_pulled, sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_pulled;
+typedef packed_buffer< order_executed, sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_executed;
+typedef packed_buffer< place_order, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_place_order;
+typedef packed_buffer< pull_order, sizeof(uint32_t) + sizeof(uint32_t) > packed_pull_order;
+
 inline size_t pack( void* buffer, size_t offset, const header& source )
 {
     offset = ::pack( buffer, offset, &source.length_ );
@@ -228,42 +238,6 @@ inline size_t unpack( const void* buffer, size_t offset, pull_order& target )
     offset = ::unpack( buffer, offset, &target.transaction_id_ );
     return offset;
 }
-
-typedef packed_buffer< header, sizeof(uint16_t) + sizeof(uint16_t) > packed_header;
-typedef packed_buffer< login, 16*sizeof(char) > packed_login;
-typedef packed_buffer< order_parameters, 8*sizeof(char) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint32_t) > packed_order_parameters;
-typedef packed_buffer< order_rejected, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_rejected;
-typedef packed_buffer< order_placed, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_placed;
-typedef packed_buffer< order_pulled, sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_pulled;
-typedef packed_buffer< order_executed, sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_executed;
-typedef packed_buffer< place_order, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_place_order;
-typedef packed_buffer< pull_order, sizeof(uint32_t) + sizeof(uint32_t) > packed_pull_order;
-
-union event
-{
-    header header_;
-    login login_;
-    order_parameters order_parameters_;
-    order_rejected order_rejected_;
-    order_placed order_placed_;
-    order_pulled order_pulled_;
-    order_executed order_executed_;
-    place_order place_order_;
-    pull_order pull_order_;
-};
-
-union packed_event
-{
-    packed_header header_;
-    packed_login login_;
-    packed_order_parameters order_parameters_;
-    packed_order_rejected order_rejected_;
-    packed_order_placed order_placed_;
-    packed_order_pulled order_pulled_;
-    packed_order_executed order_executed_;
-    packed_place_order place_order_;
-    packed_pull_order pull_order_;
-};
 
 inline std::ostream& operator<<( std::ostream& out, const header& in )
 {

@@ -11,41 +11,40 @@ void input_thread( event_publisher* inp )
 
 void journal_thread( event_subscriber* inp )
 {
-    /*
     inp->dispatch( [&]( const event& e, size_t r ) {
-        std::cout << "journal: " << r << ", " << e << std::endl;
         return false;
     } );
-    */
 }
 
 void replicate_thread( event_subscriber* inp )
 {
-    /*
     inp->dispatch( [&]( const event& e, size_t r ) {
-        std::cout << "replicate: " << r << ", " << e << std::endl;
         return false;
     } );
-    */
 }
 
 void business_thread( event_subscriber* inp, event_publisher* out )
 {
-    /*
     inp->dispatch( [&]( const event& e, size_t r ) {
-        std::cout << "business: " << r << ", " << e << std::endl;
+        header h;
+        unpack( e.header_.buf_, 0, h );
+
+        if( h.type_ == place_order::id )
+        {
+            place_order po;
+            unpack( e.payload_.buf_, 0, po );
+            std::cout << po << std::endl;
+        }
+
         return false;
     } );
-    */
 }
 
 void output_thread( event_subscriber* out )
 {
-    /*
-    out->dispatch( []( const output_event& e, size_t r ) {
+    out->dispatch( []( const event& e, size_t r ) {
         return false;
     } );
-    */
 }
 
 int main()
