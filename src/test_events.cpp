@@ -10,15 +10,17 @@ void test( T& a )
     T b;
     unpack( p.buf_, 0, b );
 
+    std::cout << a << std::endl;
+    std::cout << b << std::endl << std::endl;
+    
     assert( memcmp( &a, &b, sizeof( a ) ) == 0 );
-    std::cout << b << std::endl;
 }
 
 void fill_order_parameters( order_parameters& op )
 {
     strcpy( op.symbol_, "test" );
-    op.type_ = 6;
-    op.side_ = 7;
+    op.type_ = order_type_t::limit;
+    op.side_ = order_side_t::buy;
     op.quantity_ = 8;
     op.price_ = 9;
 }
@@ -79,7 +81,7 @@ int main()
         order_pulled p;
         p.user_id_ = 1;
         p.transaction_id_ = 2;
-        p.leaves_quantity_ = 3;
+        p.leaves_ = 3;
         fill_order_parameters( p.parameters_ );
         test< order_pulled, packed_order_pulled >( p );
     }
@@ -90,7 +92,7 @@ int main()
         p.transaction_id_ = 2;
         p.exec_price_ = 3;
         p.exec_quantity_ = 4;
-        p.leaves_quantity_ = 5;
+        p.leaves_ = 5;
         fill_order_parameters( p.parameters_ );
         test< order_executed, packed_order_executed >( p );
     }

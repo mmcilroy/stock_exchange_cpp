@@ -49,10 +49,10 @@ int main( int argc, char* argv[] )
         po.user_id_ = 1234;
         po.transaction_id_ = 4567;
         strcpy( po.parameters_.symbol_, "test" );
-        po.parameters_.type_ = 1;
+        po.parameters_.type_ = order_type_t::limit;
+        po.parameters_.side_ = order_side_t::buy;
         po.parameters_.quantity_ = 100;
         po.parameters_.price_ = 100;
-        po.parameters_.side_ = 1;
         std::cout << po << std::endl;
         pack( ppo.buf_, 0, po );
         boost::asio::write( socket, boost::asio::buffer( ppo.buf_, ppo.size ) );

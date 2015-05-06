@@ -18,18 +18,18 @@ struct order_parameters
     static constexpr uint16_t id = 2;
 
     char symbol_[8];
-    uint16_t type_;
-    uint16_t side_;
-    uint32_t quantity_;
-    uint32_t price_;
+    order_type_t type_;
+    order_side_t side_;
+    order_quantity_t quantity_;
+    order_price_t price_;
 };
 
 struct order_rejected
 {
     static constexpr uint16_t id = 3;
 
-    uint32_t user_id_;
-    uint32_t transaction_id_;
+    exchange_id_t user_id_;
+    exchange_id_t transaction_id_;
     order_parameters parameters_;
 };
 
@@ -37,8 +37,8 @@ struct order_placed
 {
     static constexpr uint16_t id = 4;
 
-    uint32_t user_id_;
-    uint32_t transaction_id_;
+    exchange_id_t user_id_;
+    exchange_id_t transaction_id_;
     order_parameters parameters_;
 };
 
@@ -46,9 +46,9 @@ struct order_pulled
 {
     static constexpr uint16_t id = 5;
 
-    uint32_t user_id_;
-    uint32_t transaction_id_;
-    uint32_t leaves_quantity_;
+    exchange_id_t user_id_;
+    exchange_id_t transaction_id_;
+    order_quantity_t leaves_;
     order_parameters parameters_;
 };
 
@@ -56,11 +56,11 @@ struct order_executed
 {
     static constexpr uint16_t id = 6;
 
-    uint32_t user_id_;
-    uint32_t transaction_id_;
-    uint32_t exec_price_;
-    uint32_t exec_quantity_;
-    uint32_t leaves_quantity_;
+    exchange_id_t user_id_;
+    exchange_id_t transaction_id_;
+    order_price_t exec_price_;
+    order_quantity_t exec_quantity_;
+    order_quantity_t leaves_;
     order_parameters parameters_;
 };
 
@@ -68,8 +68,8 @@ struct place_order
 {
     static constexpr uint16_t id = 7;
 
-    uint32_t user_id_;
-    uint32_t transaction_id_;
+    exchange_id_t user_id_;
+    exchange_id_t transaction_id_;
     order_parameters parameters_;
 };
 
@@ -77,19 +77,19 @@ struct pull_order
 {
     static constexpr uint16_t id = 8;
 
-    uint32_t user_id_;
-    uint32_t transaction_id_;
+    exchange_id_t user_id_;
+    exchange_id_t transaction_id_;
 };
 
 typedef packed_buffer< header, sizeof(uint16_t) + sizeof(uint16_t) > packed_header;
 typedef packed_buffer< login, 16*sizeof(char) > packed_login;
-typedef packed_buffer< order_parameters, 8*sizeof(char) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint32_t) > packed_order_parameters;
-typedef packed_buffer< order_rejected, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_rejected;
-typedef packed_buffer< order_placed, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_placed;
-typedef packed_buffer< order_pulled, sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_pulled;
-typedef packed_buffer< order_executed, sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_order_executed;
-typedef packed_buffer< place_order, sizeof(uint32_t) + sizeof(uint32_t) + packed_order_parameters::size > packed_place_order;
-typedef packed_buffer< pull_order, sizeof(uint32_t) + sizeof(uint32_t) > packed_pull_order;
+typedef packed_buffer< order_parameters, 8*sizeof(char) + sizeof(order_type_t) + sizeof(order_side_t) + sizeof(order_quantity_t) + sizeof(order_price_t) > packed_order_parameters;
+typedef packed_buffer< order_rejected, sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_order_rejected;
+typedef packed_buffer< order_placed, sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_order_placed;
+typedef packed_buffer< order_pulled, sizeof(exchange_id_t) + sizeof(exchange_id_t) + sizeof(order_quantity_t) + packed_order_parameters::size > packed_order_pulled;
+typedef packed_buffer< order_executed, sizeof(exchange_id_t) + sizeof(exchange_id_t) + sizeof(order_price_t) + sizeof(order_quantity_t) + sizeof(order_quantity_t) + packed_order_parameters::size > packed_order_executed;
+typedef packed_buffer< place_order, sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_place_order;
+typedef packed_buffer< pull_order, sizeof(exchange_id_t) + sizeof(exchange_id_t) > packed_pull_order;
 
 inline size_t pack( void* buffer, size_t offset, const header& source )
 {
@@ -134,7 +134,7 @@ inline size_t pack( void* buffer, size_t offset, const order_pulled& source )
 {
     offset = ::pack( buffer, offset, &source.user_id_ );
     offset = ::pack( buffer, offset, &source.transaction_id_ );
-    offset = ::pack( buffer, offset, &source.leaves_quantity_ );
+    offset = ::pack( buffer, offset, &source.leaves_ );
     offset = ::pack( buffer, offset, &source.parameters_ );
     return offset;
 }
@@ -145,7 +145,7 @@ inline size_t pack( void* buffer, size_t offset, const order_executed& source )
     offset = ::pack( buffer, offset, &source.transaction_id_ );
     offset = ::pack( buffer, offset, &source.exec_price_ );
     offset = ::pack( buffer, offset, &source.exec_quantity_ );
-    offset = ::pack( buffer, offset, &source.leaves_quantity_ );
+    offset = ::pack( buffer, offset, &source.leaves_ );
     offset = ::pack( buffer, offset, &source.parameters_ );
     return offset;
 }
@@ -208,7 +208,7 @@ inline size_t unpack( const void* buffer, size_t offset, order_pulled& target )
 {
     offset = ::unpack( buffer, offset, &target.user_id_ );
     offset = ::unpack( buffer, offset, &target.transaction_id_ );
-    offset = ::unpack( buffer, offset, &target.leaves_quantity_ );
+    offset = ::unpack( buffer, offset, &target.leaves_ );
     offset = ::unpack( buffer, offset, &target.parameters_ );
     return offset;
 }
@@ -219,7 +219,7 @@ inline size_t unpack( const void* buffer, size_t offset, order_executed& target 
     offset = ::unpack( buffer, offset, &target.transaction_id_ );
     offset = ::unpack( buffer, offset, &target.exec_price_ );
     offset = ::unpack( buffer, offset, &target.exec_quantity_ );
-    offset = ::unpack( buffer, offset, &target.leaves_quantity_ );
+    offset = ::unpack( buffer, offset, &target.leaves_ );
     offset = ::unpack( buffer, offset, &target.parameters_ );
     return offset;
 }
@@ -288,7 +288,7 @@ inline std::ostream& operator<<( std::ostream& out, const order_pulled& in )
     out << "order_pulled: ";
     out << "user_id=" << in.user_id_;
     out << ", " << "transaction_id=" << in.transaction_id_;
-    out << ", " << "leaves_quantity=" << in.leaves_quantity_;
+    out << ", " << "leaves=" << in.leaves_;
     out << ", " << "parameters=" << in.parameters_;
     return out;
 };
@@ -300,7 +300,7 @@ inline std::ostream& operator<<( std::ostream& out, const order_executed& in )
     out << ", " << "transaction_id=" << in.transaction_id_;
     out << ", " << "exec_price=" << in.exec_price_;
     out << ", " << "exec_quantity=" << in.exec_quantity_;
-    out << ", " << "leaves_quantity=" << in.leaves_quantity_;
+    out << ", " << "leaves=" << in.leaves_;
     out << ", " << "parameters=" << in.parameters_;
     return out;
 };

@@ -2,10 +2,11 @@
 
 #include "structs.hpp"
 
-struct order
+struct order_state
 {
-    order_parameters params_;
-    quantity exec_qty_;
+    order_parameters parameters_;
+    transaction_id transaction_;
+    quantity leaves_;
 };
 
 struct book
@@ -13,11 +14,5 @@ struct book
     typedef std::multimap< price, order, std::greater< price > > buy_orders;
     typedef std::multimap< price, order, std::less< price > > sell_orders;
 
-    void execute( const order_parameters& )
-    {
-    }
-
-    quantity executable_quantity( const order_parameters& )
-    {
-    }
+    void operator( const place_order& );
 };
