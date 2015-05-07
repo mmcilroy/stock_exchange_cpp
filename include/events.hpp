@@ -17,64 +17,18 @@ size_t unpack( const void* buffer, size_t offset, T* target, size_t length=1 )
     return offset+sizeof(T)*length;
 }
 
-template< typename T, size_t N >
+template< size_t N >
 struct packed_buffer
 {
     static constexpr size_t size = N;
 
-    void pack( const T& source )
-    {
-        pack( buf_, 0, source );
-    }
-
-    void unpack( T& target ) const
-    {
-        unpack( buf_, 0, target );
-    }
-
-    packed_buffer& operator=( const packed_buffer& other )
-    {
-        if( this != &other ) {
-            memcpy( buf_, other.buf_, size );
-        }
-        return *this;
-    }
-
     char buf_[ size ];
 };
 
-typedef uint64_t exchange_id_t;
-typedef uint32_t order_quantity_t;
-typedef uint32_t order_price_t;
-
-enum class order_type_t { limit, market };
-enum class order_side_t { buy, sell };
-
-inline std::ostream& operator<<( std::ostream& out, const order_type_t& in )
-{
-    if( in == order_type_t::limit ) {
-        out << "limit";
-    } else if( in == order_type_t::market ) {
-        out << "market";
-    }
-    return out;
-};
-
-inline std::ostream& operator<<( std::ostream& out, const order_side_t& in )
-{
-    if( in == order_side_t::buy ) {
-        out << "buy";
-    } else if( in == order_side_t::sell ) {
-        out << "sell";
-    }
-    return out;
-};
-
+#include "types.hpp"
 #include "events.inl"
 
-#include "publisher.hpp"
-
-union all_payloads
+union packed_payloads
 {
     packed_login login_;
     packed_order_parameters order_parameters_;
@@ -86,19 +40,86 @@ union all_payloads
     packed_pull_order pull_order_;
 };
 
-struct packed_payload
+struct packed_event
 {
-    static constexpr size_t size = packed_header::size + sizeof(all_payloads);    
+    static constexpr size_t size = sizeof(packed_header) + sizeof(packed_payloads);
 
     char buf_[ size ];
+
+    char* get_header_buf()
+    {
+        return buf_;
+    }
+
+    const char* get_header_buf() const
+    {
+        return buf_;
+    }
+
+    char* get_payload_buf()
+    {
+        return buf_ + sizeof(packed_header);
+    }
+
+    const char* get_payload_buf() const
+    {
+        return buf_ + sizeof(packed_header);
+    }
+
+    size_t length() const
+    {
+        header hdr;
+        ::unpack( buf_, 0, hdr );
+        return sizeof(packed_header) + hdr.length_;
+    }
+
+    template< typename T >
+    T& pack( T& target )
+    {
+        header hdr;
+        hdr.type_ = T::id;
+        hdr.length_ = T::size;
+        ::pack( buf_, 0, hdr );
+        ::pack( buf_ + sizeof(packed_header), 0, target );
+        return target;
+    }
+
+    template< typename T >
+    T& unpack( T& target ) const
+    {
+        ::unpack( buf_ + sizeof(packed_header), 0, target );
+        return target;
+    }
 };
 
-struct event
+template<>
+inline header& packed_event::unpack< header >( header& target ) const
 {
-    packed_header header_;
-    packed_payload payload_;
+    ::unpack( buf_, 0, target );
+    return target;
+}
+
+inline std::ostream& operator<<( std::ostream& out, const packed_event& in )
+{
+    header hdr;
+    out << in.unpack( hdr );
+
+    if( hdr.type_ == place_order::id ) {
+        place_order po; out << " | " << in.unpack( po );
+    } else if( hdr.type_ == order_placed::id ) {
+        order_placed op; out << " | " << in.unpack( op );
+    } else if( hdr.type_ == order_executed::id ) {
+        order_executed oe; out << " | " << in.unpack( oe );
+    } else if( hdr.type_ == login::id ) {
+        login l; out << " | " << in.unpack( l );
+    } else {
+        out << " | ???";
+    }
+
+    return out;
 };
 
-typedef publisher< event, blocking_sequence > event_publisher;
+#include "publisher.hpp"
 
-typedef subscriber< event, blocking_sequence > event_subscriber;
+typedef publisher< packed_event, blocking_sequence > event_publisher;
+typedef subscriber< packed_event, blocking_sequence > event_subscriber;

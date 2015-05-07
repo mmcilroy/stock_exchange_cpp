@@ -1,32 +1,28 @@
 #pragma once
 
-#include <cstdint>
-#include <ostream>
+typedef uint64_t exchange_id_t;
+typedef uint32_t order_quantity_t;
+typedef uint32_t order_price_t;
 
-typedef uint64_t id;
-typedef uint64_t quantity;
-typedef uint64_t price;
+enum class order_type_t { limit, market };
+enum class order_side_t { buy, sell };
 
-enum class order_type { LIMIT, MARKET };
-enum class order_state { NEW, PART_FILLED, FILLED, REJECTED, CANCELLED };
-enum class side { BUY, SELL };
-
-std::ostream& operator<<( std::ostream& o, const order_type& t )
+inline std::ostream& operator<<( std::ostream& out, const order_type_t& in )
 {
-    if( t == order_type::LIMIT ) {
-        o << "LIMIT";
-    } else {
-        o << "MARKET";
+    if( in == order_type_t::limit ) {
+        out << "limit";
+    } else if( in == order_type_t::market ) {
+        out << "market";
     }
-    return o;
+    return out;
 };
 
-std::ostream& operator<<( std::ostream& o, const side& s )
+inline std::ostream& operator<<( std::ostream& out, const order_side_t& in )
 {
-    if( s == side::BUY ) {
-        o << "BUY";
-    } else {
-        o << "SELL";
+    if( in == order_side_t::buy ) {
+        out << "buy";
+    } else if( in == order_side_t::sell ) {
+        out << "sell";
     }
-    return o;
+    return out;
 };

@@ -4,6 +4,7 @@ function gen_struct( names )
         print( 'struct ' .. name )
         print( '{' )
         print( '    static constexpr uint16_t id = ' .. id .. ';\n' )
+        print( '    static constexpr size_t size = packed_' .. name .. '::size;\n' )
         for key,field in pairs( _G[name] ) do
             if field['length'] == nil then
                 print( '    ' .. field['type'] .. ' ' .. field['name'] .. '_;' )
@@ -35,7 +36,7 @@ function gen_packed_struct( names )
             end
             i=i+1
         end
-        print( 'typedef packed_buffer< ' .. name .. ', ' .. s .. ' > packed_' .. name .. ';' )
+        print( 'typedef packed_buffer< ' .. s .. ' > packed_' .. name .. ';' )
     end
     print( '' )
 end

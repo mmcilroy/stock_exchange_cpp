@@ -7,9 +7,9 @@ using boost::asio::ip::tcp;
 class session : public std::enable_shared_from_this< session >
 {
 public:
-    session( tcp::socket socket, event_publisher* inp ) :
+    session( tcp::socket socket, event_publisher* ev_pub ) :
         socket_( std::move( socket ) ),
-        inp_( inp ),
+        ev_pub_( ev_pub ),
         logged_on_( false )
     {
         std::cout << this << " new session" << std::endl;
@@ -26,8 +26,8 @@ public:
 
         boost::asio::async_read(
             socket_,
-            boost::asio::buffer( header_.buf_, header_.size ),
-            boost::asio::transfer_exactly( header_.size ),
+            boost::asio::buffer( ev_.get_header_buf(), packed_header::size ),
+            boost::asio::transfer_exactly( packed_header::size ),
             [ this, self ]( boost::system::error_code ec, std::size_t length ) {
                 if( !ec ) {
                     read_payload();
@@ -40,11 +40,11 @@ public:
         auto self( shared_from_this() );
 
         header hdr;
-        unpack( header_.buf_, 0, hdr );
+        unpack( ev_.get_header_buf(), 0, hdr );
 
         boost::asio::async_read(
             socket_,
-            boost::asio::buffer( payload_.buf_, hdr.length_ ),
+            boost::asio::buffer( ev_.get_payload_buf(), hdr.length_ ),
             boost::asio::transfer_exactly( hdr.length_ ),
             [ this, self, hdr ]( boost::system::error_code ec, std::size_t length ) {
                 if( !ec ) {
@@ -55,11 +55,12 @@ public:
 
     void process( uint16_t type )
     {
+        std::cout << "< " << ev_ << std::endl;
+
         if( logged_on_ )
         {
-            inp_->publish( 1, [ this ]( event& e ) {
-                e.header_ = header_;
-                e.payload_ = payload_;
+            ev_pub_->publish( 1, [ this ]( packed_event& ev, size_t i ) {
+                ev = ev_;
             } );
         }
         else
@@ -67,7 +68,7 @@ public:
             if( type == login::id )
             {
                 login l;
-                unpack( payload_.buf_, 0, l );
+                unpack( ev_.get_payload_buf(), 0, l );
                 logged_on_ = true;
             }
             else
@@ -81,19 +82,17 @@ public:
 
     tcp::socket socket_;
 
-    event_publisher* inp_;
-
-    packed_header header_;
-    packed_payload payload_;
+    event_publisher* ev_pub_;
+    packed_event ev_;
 
     bool logged_on_;
 };
 
 struct io::impl
 {
-    void accept( uint16_t port, event_publisher* inp )
+    void accept( uint16_t port, event_publisher* ev_pub )
     {
-        inp_ = inp;
+        ev_pub_ = ev_pub;
         tcp::acceptor acceptor( io_, tcp::endpoint( tcp::v4(), 14002 ) );
         tcp::socket socket( io_ );
         accept( acceptor, socket );
@@ -106,14 +105,14 @@ struct io::impl
              s,
             [&]( boost::system::error_code ec ) {
                 if( !ec ) {
-                    std::make_shared< session >( std::move( s ), inp_ )->read_header();
+                    std::make_shared< session >( std::move( s ), ev_pub_ )->read_header();
                 }
                 accept( a, s );
             } );
     }
 
     boost::asio::io_service io_;
-    event_publisher* inp_;
+    event_publisher* ev_pub_;
 };
 
 io::io() :

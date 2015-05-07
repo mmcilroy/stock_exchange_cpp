@@ -10,5 +10,5 @@ endif()
 
 set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -Wl,--no-as-needed -O3" )
 
-include_directories( include /home/mmcilroy/pubsub_cpp/include )
+include_directories( include /home/sm87110/pubsub_cpp/include )
 add_subdirectory( src )

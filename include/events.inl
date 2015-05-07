@@ -1,6 +1,18 @@
+typedef packed_buffer< sizeof(uint16_t) + sizeof(uint16_t) > packed_header;
+typedef packed_buffer< 16*sizeof(char) > packed_login;
+typedef packed_buffer< 8*sizeof(char) + sizeof(order_type_t) + sizeof(order_side_t) + sizeof(order_quantity_t) + sizeof(order_price_t) > packed_order_parameters;
+typedef packed_buffer< sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_order_rejected;
+typedef packed_buffer< sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_order_placed;
+typedef packed_buffer< sizeof(exchange_id_t) + sizeof(exchange_id_t) + sizeof(order_quantity_t) + packed_order_parameters::size > packed_order_pulled;
+typedef packed_buffer< sizeof(exchange_id_t) + sizeof(exchange_id_t) + sizeof(order_price_t) + sizeof(order_quantity_t) + sizeof(order_quantity_t) + packed_order_parameters::size > packed_order_executed;
+typedef packed_buffer< sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_place_order;
+typedef packed_buffer< sizeof(exchange_id_t) + sizeof(exchange_id_t) > packed_pull_order;
+
 struct header
 {
     static constexpr uint16_t id = 0;
+
+    static constexpr size_t size = packed_header::size;
 
     uint16_t length_;
     uint16_t type_;
@@ -10,12 +22,16 @@ struct login
 {
     static constexpr uint16_t id = 1;
 
+    static constexpr size_t size = packed_login::size;
+
     char user_id_[16];
 };
 
 struct order_parameters
 {
     static constexpr uint16_t id = 2;
+
+    static constexpr size_t size = packed_order_parameters::size;
 
     char symbol_[8];
     order_type_t type_;
@@ -28,6 +44,8 @@ struct order_rejected
 {
     static constexpr uint16_t id = 3;
 
+    static constexpr size_t size = packed_order_rejected::size;
+
     exchange_id_t user_id_;
     exchange_id_t transaction_id_;
     order_parameters parameters_;
@@ -36,6 +54,8 @@ struct order_rejected
 struct order_placed
 {
     static constexpr uint16_t id = 4;
+
+    static constexpr size_t size = packed_order_placed::size;
 
     exchange_id_t user_id_;
     exchange_id_t transaction_id_;
@@ -46,6 +66,8 @@ struct order_pulled
 {
     static constexpr uint16_t id = 5;
 
+    static constexpr size_t size = packed_order_pulled::size;
+
     exchange_id_t user_id_;
     exchange_id_t transaction_id_;
     order_quantity_t leaves_;
@@ -55,6 +77,8 @@ struct order_pulled
 struct order_executed
 {
     static constexpr uint16_t id = 6;
+
+    static constexpr size_t size = packed_order_executed::size;
 
     exchange_id_t user_id_;
     exchange_id_t transaction_id_;
@@ -68,6 +92,8 @@ struct place_order
 {
     static constexpr uint16_t id = 7;
 
+    static constexpr size_t size = packed_place_order::size;
+
     exchange_id_t user_id_;
     exchange_id_t transaction_id_;
     order_parameters parameters_;
@@ -77,19 +103,11 @@ struct pull_order
 {
     static constexpr uint16_t id = 8;
 
+    static constexpr size_t size = packed_pull_order::size;
+
     exchange_id_t user_id_;
     exchange_id_t transaction_id_;
 };
-
-typedef packed_buffer< header, sizeof(uint16_t) + sizeof(uint16_t) > packed_header;
-typedef packed_buffer< login, 16*sizeof(char) > packed_login;
-typedef packed_buffer< order_parameters, 8*sizeof(char) + sizeof(order_type_t) + sizeof(order_side_t) + sizeof(order_quantity_t) + sizeof(order_price_t) > packed_order_parameters;
-typedef packed_buffer< order_rejected, sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_order_rejected;
-typedef packed_buffer< order_placed, sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_order_placed;
-typedef packed_buffer< order_pulled, sizeof(exchange_id_t) + sizeof(exchange_id_t) + sizeof(order_quantity_t) + packed_order_parameters::size > packed_order_pulled;
-typedef packed_buffer< order_executed, sizeof(exchange_id_t) + sizeof(exchange_id_t) + sizeof(order_price_t) + sizeof(order_quantity_t) + sizeof(order_quantity_t) + packed_order_parameters::size > packed_order_executed;
-typedef packed_buffer< place_order, sizeof(exchange_id_t) + sizeof(exchange_id_t) + packed_order_parameters::size > packed_place_order;
-typedef packed_buffer< pull_order, sizeof(exchange_id_t) + sizeof(exchange_id_t) > packed_pull_order;
 
 inline size_t pack( void* buffer, size_t offset, const header& source )
 {

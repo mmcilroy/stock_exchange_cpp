@@ -11,29 +11,52 @@ void input_thread( event_publisher* inp )
 
 void journal_thread( event_subscriber* inp )
 {
-    inp->dispatch( [&]( const event& e, size_t r ) {
+    inp->dispatch( [&]( const packed_event& ev, size_t r ) {
         return false;
     } );
 }
 
 void replicate_thread( event_subscriber* inp )
 {
-    inp->dispatch( [&]( const event& e, size_t r ) {
+    inp->dispatch( [&]( const packed_event& ev, size_t r ) {
         return false;
     } );
 }
 
 void business_thread( event_subscriber* inp, event_publisher* out )
 {
-    inp->dispatch( [&]( const event& e, size_t r ) {
-        header h;
-        unpack( e.header_.buf_, 0, h );
+    inp->dispatch( [&]( const packed_event& ev, size_t r )
+    {
+        header hdr;
+        ev.unpack( hdr );
 
-        if( h.type_ == place_order::id )
+        if( hdr.type_ == place_order::id )
         {
             place_order po;
-            unpack( e.payload_.buf_, 0, po );
-            std::cout << po << std::endl;
+            ev.unpack( po );
+
+            out->publish( 2, [&]( packed_event& ev, size_t n )
+            {
+                if( n == 0 )
+                {
+                    order_placed op;
+                    op.parameters_ = po.parameters_;
+                    op.user_id_ = po.user_id_;
+                    op.transaction_id_ = po.transaction_id_;
+                    ev.pack( op );
+                }
+                else
+                {
+                    order_executed oe;
+                    oe.parameters_ = po.parameters_;
+                    oe.user_id_ = po.user_id_;
+                    oe.transaction_id_ = po.transaction_id_;
+                    oe.exec_price_ = po.parameters_.price_;
+                    oe.exec_quantity_ = po.parameters_.quantity_;
+                    oe.leaves_ = 0;
+                    ev.pack( oe );
+                }
+            } );
         }
 
         return false;
@@ -42,7 +65,8 @@ void business_thread( event_subscriber* inp, event_publisher* out )
 
 void output_thread( event_subscriber* out )
 {
-    out->dispatch( []( const event& e, size_t r ) {
+    out->dispatch( []( const packed_event& ev, size_t r ) {
+        std::cout << "> " << ev << std::endl;
         return false;
     } );
 }

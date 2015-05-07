@@ -3,6 +3,12 @@
 
 struct order_state
 {
+    order_state( const order_parameters& params, order_quantity_t leaves ) :
+        parameters_( params ),
+        leaves_( leaves )
+    {
+    }
+
     order_parameters parameters_;
     exchange_id_t transaction_;
     order_quantity_t leaves_;
@@ -16,8 +22,7 @@ public:
     {
         order_quantity_t leaves_qty = place.parameters_.quantity_;
 
-        auto i = buys_.begin();
-        while( i != buys_.end() )
+        for( auto i = buys_.begin(); i != buys_.end(); )
         {
             order_price_t price = i->first;
             order_state& state = i->second;
@@ -43,7 +48,7 @@ public:
         }
 
         if( leaves_qty > 0 ) {
-            //sells_.emplace( in_price, order( in_quantity, leaves_qty ) );
+            sells_.emplace( place.parameters_.price_, order_state( place.parameters_, leaves_qty ) );
         }
     }
 
