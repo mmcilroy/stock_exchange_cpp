@@ -2,11 +2,13 @@
 
 #include <thread>
 
-io io;
+io_acceptor io;
 
 void input_thread( event_publisher* inp )
 {
-    io.accept( 14002, inp );
+    io.accept( []( io_session& sess, packed_event& event ) {
+        std::cout << event << std::endl;
+    } );
 }
 
 void journal_thread( event_subscriber* inp )

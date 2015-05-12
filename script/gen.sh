@@ -1,1 +1,1 @@
-lua gen.lua > ../include/events.inl
+lua gen.lua > ../include/structs.inl

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 typedef uint64_t exchange_id_t;
 typedef uint32_t order_quantity_t;
 typedef uint32_t order_price_t;

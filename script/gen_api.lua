@@ -3,8 +3,6 @@ function gen_struct( names )
     for key,name in pairs( names ) do
         print( 'struct ' .. name )
         print( '{' )
-        print( '    static constexpr uint16_t id = ' .. id .. ';\n' )
-        print( '    static constexpr size_t size = packed_' .. name .. '::size;\n' )
         for key,field in pairs( _G[name] ) do
             if field['length'] == nil then
                 print( '    ' .. field['type'] .. ' ' .. field['name'] .. '_;' )
@@ -17,7 +15,8 @@ function gen_struct( names )
     end
 end
 
-function gen_packed_struct( names )
+function gen_traits( names )
+    local j=0
     for key,name in pairs( names ) do
         local i=0
         local s=''
@@ -32,13 +31,22 @@ function gen_packed_struct( names )
                     s = s .. field['length'] .. '*sizeof(' .. field['type'] .. ')'
                 end
             else
-                s = s .. 'packed_' .. field['type'] .. '::size'
+                s = s .. 'buffer_size<' .. field['type'] .. '>()'
             end
             i=i+1
         end
-        print( 'typedef packed_buffer< ' .. s .. ' > packed_' .. name .. ';' )
+        print( 'template<>' )
+        print( 'constexpr size_t buffer_size<' .. name .. '>()' )
+        print( '{' )
+        print( '    return ' .. s .. ';' )
+        print( '}\n' )
+        print( 'template<>' )
+        print( 'constexpr size_t payload_type<' .. name .. '>()' )
+        print( '{' )
+        print( '    return ' .. j .. ';' )
+        print( '}\n' )
+        j=j+1
     end
-    print( '' )
 end
 
 function gen_pack( names )
