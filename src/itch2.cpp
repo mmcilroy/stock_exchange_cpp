@@ -89,7 +89,6 @@ int main()
     std::thread jnl_thr( jnl_thr_fn, &jnl_sub );
 
     ioc.accept( 14002, [ &inp_pub ]( const io_event& ea ) {
-        std::cout << ea << std::endl;
         inp_pub.publish( 1, [ &ea ]( io_event& ep, size_t n ) {
             ep = ea;
         } );

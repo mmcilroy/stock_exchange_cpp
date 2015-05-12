@@ -2,12 +2,16 @@ using boost::asio::ip::tcp;
 
 struct io_session : public std::enable_shared_from_this< io_session >
 {
-    io_session( io_controller&, io_session_id id, tcp::socket );
+    io_session( io_controller&, tcp::socket );
 
     ~io_session();
 
     template< typename H >
     void read( H handler );
+
+    void write( const io_event& );
+
+    io_session_id id();
 
 private:
     io_controller& ioc_;
@@ -17,9 +21,9 @@ private:
     tcp::socket socket_;
 };
 
-io_session::io_session( io_controller& ioc, io_session_id id, tcp::socket socket ) :
+io_session::io_session( io_controller& ioc, tcp::socket socket ) :
     ioc_( ioc ),
-    id_( id ),
+    id_( ioc.alloc_id() ),
     socket_( std::move( socket ) )
 {
 }
@@ -32,24 +36,17 @@ io_session::~io_session()
 template< typename H >
 void io_session::read( H handler )
 {
-    std::cout << "start read" << std::endl;
-
     auto self( shared_from_this() );
-
     boost::asio::async_read(
         socket_,
         boost::asio::buffer( event_.header_buffer(), buffer_size< header >() ),
         boost::asio::transfer_exactly( buffer_size< header >() ),
         [ this, self, handler ]( boost::system::error_code ec, std::size_t length )
         {
-            std::cout << "read " << length << std::endl;
-
             if( !ec )
             {
                 header hdr;
                 event_.unpack( hdr );
-
-                std::cout << hdr << std::endl;
 
                 boost::asio::async_read(
                     socket_,
@@ -57,24 +54,37 @@ void io_session::read( H handler )
                     boost::asio::transfer_exactly( hdr.size_ ),
                     [ this, self, handler ]( boost::system::error_code ec, std::size_t length )
                     {
-                        std::cout << "read " << length << std::endl;
-
                         if( !ec )
                         {
+                            std::cout << "< " << event_ << std::endl;
                             handler( event_ );
                             read( handler );
                         }
                         else
                         {
-                            std::cout << ec.message() << std::endl;
+                            std::cerr << "io_session.read: error - " << ec.message() << std::endl;
                         }
                     } );
             }
             else
             {
-                std::cout << ec.message() << std::endl;
+                std::cerr << "io_session.read: error - " << ec.message() << std::endl;
             }
         } );
+}
+
+inline void io_session::write( const io_event& e )
+{
+    std::cout << "> " << e << std::endl;
+    boost::asio::write(
+        socket_,
+        boost::asio::buffer( e.header_buffer(), e.size() ) );
+}
+
+inline io_session_id io_session::id()
+
+{
+    return id_;
 }
 
 template< typename H >
@@ -88,8 +98,9 @@ void io_controller::accept( int port, H handler )
                 {
                     if( !ec )
                     {
-                        auto sess = std::make_shared< io_session >( *this, 1, std::move( socket ) );
+                        auto sess = std::make_shared< io_session >( *this, std::move( socket ) );
                         sess->read( handler );
+                        sessions_[ sess->id() ] = sess.get();
                         accept_again( acceptor, socket );
                     }
                 } );
@@ -101,12 +112,43 @@ void io_controller::accept( int port, H handler )
     io_.run();
 }
 
-inline void io_controller::write( const io_event& )
+template< typename H >
+void io_controller::connect( int port, H handler )
 {
+    tcp::socket socket( io_ );
+    tcp::resolver resolver( io_ );
+    boost::asio::connect( socket, resolver.resolve( { "localhost", "14002" } ) ); 
+    auto sess = std::make_shared< io_session >( *this, std::move( socket ) );
+    sess->read( handler );
+    sessions_[ sess->id() ] = sess.get();
+    io_.run();
+}
+
+inline void io_controller::write( const io_event& e )
+{
+    session s;
+    e.unpack( s );
+
+    io_.dispatch( [ this, s, e ]()
+    {
+        auto it = sessions_.find( s.session_id_ );
+        if( it != sessions_.end() ) {
+            it->second->write( e );
+        } else {
+            std::cerr << "io_controller.write: unknown session_id " << s.session_id_ << std::endl;
+        }
+    });
+
     // post write
 }
 
 inline void io_controller::closed( io_session_id id )
 {
-    std::cout << "closed " << id << std::endl;
+    sessions_.erase( id );
+}
+
+inline io_session_id io_controller::alloc_id()
+{
+    static io_session_id id = 0;
+    return id++;
 }
