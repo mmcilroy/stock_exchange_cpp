@@ -4,7 +4,7 @@
 void io_thread( io_controller* ioc )
 {
     ioc->connect( 14002, []( const io_event& e ) {
-        ;
+        std::cout << "< " << e << std::endl;
     } );
 }
 

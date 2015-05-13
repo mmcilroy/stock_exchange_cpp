@@ -26,6 +26,9 @@ io_session::io_session( io_controller& ioc, tcp::socket socket ) :
     id_( ioc.alloc_id() ),
     socket_( std::move( socket ) )
 {
+    session s;
+    s.session_id_ = id_;
+    event_.pack( s );
 }
 
 io_session::~io_session()
@@ -56,33 +59,30 @@ void io_session::read( H handler )
                     {
                         if( !ec )
                         {
-                            std::cout << "< " << event_ << std::endl;
                             handler( event_ );
                             read( handler );
                         }
                         else
                         {
-                            std::cerr << "io_session.read: error - " << ec.message() << std::endl;
+                            std::cerr << "io_session " << id_ << " read error - " << ec.message() << std::endl;
                         }
                     } );
             }
             else
             {
-                std::cerr << "io_session.read: error - " << ec.message() << std::endl;
+                std::cerr << "io_session " << id_ << " read error - " << ec.message() << std::endl;
             }
         } );
 }
 
 inline void io_session::write( const io_event& e )
 {
-    std::cout << "> " << e << std::endl;
     boost::asio::write(
         socket_,
-        boost::asio::buffer( e.header_buffer(), e.size() ) );
+        boost::asio::buffer( e.header_buffer(), e.size() - buffer_size< session >() ) );
 }
 
 inline io_session_id io_session::id()
-
 {
     return id_;
 }
@@ -135,11 +135,9 @@ inline void io_controller::write( const io_event& e )
         if( it != sessions_.end() ) {
             it->second->write( e );
         } else {
-            std::cerr << "io_controller.write: unknown session_id " << s.session_id_ << std::endl;
+            std::cerr << "io_controller write: unknown session_id " << s.session_id_ << std::endl;
         }
     });
-
-    // post write
 }
 
 inline void io_controller::closed( io_session_id id )

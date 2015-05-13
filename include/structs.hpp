@@ -20,13 +20,13 @@ size_t unpack( const void* buffer, size_t offset, T* target, size_t length=1 )
 template< typename T >
 constexpr size_t buffer_size()
 {
-    return 0;
+    // compile time error - T is an unknown type
 }
 
 template< typename T >
 constexpr size_t payload_type()
 {
-    return 0;
+    // compile time error - T is an unknown type
 }
 
 #include "types.hpp"

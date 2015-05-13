@@ -2,7 +2,7 @@
 
 #include "structs.hpp"
 
-// payload is only defined to give us a way of knowing the maximum buffer
+// payload exists only to give us a way of knowing the maximum buffer
 // size required for a payload at compile time
 union payload
 {

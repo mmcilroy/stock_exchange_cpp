@@ -1,62 +1,69 @@
-#include "io.hpp"
+#include "io_controller.hpp"
+#include "publisher.hpp"
 
-#include <thread>
+typedef publisher< io_event, blocking_sequence > io_event_publisher;
+typedef subscriber< io_event, blocking_sequence > io_event_subscriber;
 
-io_acceptor io;
 
-void input_thread( event_publisher* inp )
+
+// ----------------------------------------------------------------------------
+class io_journal
 {
-    io.accept( []( io_session& sess, packed_event& event ) {
-        std::cout << event << std::endl;
-    } );
-}
+public:
+    void write( const io_event& ) { ; }
+};
 
-void journal_thread( event_subscriber* inp )
-{
-    inp->dispatch( [&]( const packed_event& ev, size_t r ) {
-        return false;
-    } );
-}
 
-void replicate_thread( event_subscriber* inp )
-{
-    inp->dispatch( [&]( const packed_event& ev, size_t r ) {
-        return false;
-    } );
-}
 
-void business_thread( event_subscriber* inp, event_publisher* out )
+// ----------------------------------------------------------------------------
+void jnl_thr_fn( io_event_subscriber* sub )
 {
-    inp->dispatch( [&]( const packed_event& ev, size_t r )
+    io_journal ioj;
+    sub->dispatch( [&]( const io_event& ev, size_t rem )
     {
-        header hdr;
-        ev.unpack( hdr );
+        ioj.write( ev );
+        return false;
+    } );
+}
 
-        if( hdr.type_ == place_order::id )
+
+
+// ----------------------------------------------------------------------------
+void biz_thr_fn( io_event_subscriber* sub, io_event_publisher* pub )
+{
+    sub->dispatch( [&]( const io_event& ei, size_t rem )
+    {
+        header mh;
+        ei.unpack( mh );
+
+        session sh;
+        ei.unpack( sh );
+
+        if( mh.type_ == payload_type< place_order >() )
         {
             place_order po;
-            ev.unpack( po );
+            ei.unpack( po );
 
-            out->publish( 2, [&]( packed_event& ev, size_t n )
+            pub->publish( 1+po.parameters_.quantity_, [&]( io_event& eo, size_t n )
             {
                 if( n == 0 )
                 {
                     order_placed op;
                     op.parameters_ = po.parameters_;
-                    op.user_id_ = po.user_id_;
                     op.transaction_id_ = po.transaction_id_;
-                    ev.pack( op );
+                    eo.pack( op );
+                    eo.pack( sh );
                 }
                 else
                 {
                     order_executed oe;
                     oe.parameters_ = po.parameters_;
-                    oe.user_id_ = po.user_id_;
                     oe.transaction_id_ = po.transaction_id_;
                     oe.exec_price_ = po.parameters_.price_;
-                    oe.exec_quantity_ = po.parameters_.quantity_;
-                    oe.leaves_ = 0;
-                    ev.pack( oe );
+                    oe.exec_quantity_ = 1;
+                    oe.leaves_ = po.parameters_.quantity_-n;
+                    eo.pack( oe );
+                    eo.pack( sh );
                 }
             } );
         }
@@ -65,34 +72,44 @@ void business_thread( event_subscriber* inp, event_publisher* out )
     } );
 }
 
-void output_thread( event_subscriber* out )
+
+
+// ----------------------------------------------------------------------------
+void out_thr_fn( io_controller* ioc, io_event_subscriber* sub )
 {
-    out->dispatch( []( const packed_event& ev, size_t r ) {
-        std::cout << "> " << ev << std::endl;
+    sub->dispatch( [&]( const io_event& ev, size_t rem )
+    {
+        ioc->write( ev );
         return false;
     } );
 }
 
+
+
+// ----------------------------------------------------------------------------
 int main()
 {
     const size_t Q = 8;
 
-    event_publisher input( Q );
-    event_publisher output( Q );
+    io_event_publisher inp_pub( Q );
+    io_event_publisher out_pub( Q );
+    io_controller ioc;
 
-    event_subscriber& jnl_sub = input.subscribe();
-    event_subscriber& rep_sub = jnl_sub.subscribe();
-    event_subscriber& biz_sub = rep_sub.subscribe();
+    io_event_subscriber& jnl_sub = inp_pub.subscribe();
+    io_event_subscriber& biz_sub = jnl_sub.subscribe();
 
-    std::thread out_thr( output_thread, &output.subscribe() );
-    std::thread jnl_thr( journal_thread, &jnl_sub );
-    std::thread rep_thr( replicate_thread, &rep_sub );
-    std::thread biz_thr( business_thread, &biz_sub, &output );
-    std::thread inp_thr( input_thread, &input );
+    std::thread out_thr( out_thr_fn, &ioc, &out_pub.subscribe() );
+    std::thread biz_thr( biz_thr_fn, &biz_sub, &out_pub );
+    std::thread jnl_thr( jnl_thr_fn, &jnl_sub );
 
-    biz_thr.join();
-    rep_thr.join();
+    ioc.accept( 14002, [ &inp_pub ]( const io_event& ea ) {
+        std::cout << "< " << ea << std::endl;
+        inp_pub.publish( 1, [ &ea ]( io_event& ep, size_t n ) {
+            ep = ea;
+        } );
+    } );
+
     jnl_thr.join();
-    inp_thr.join();
+    biz_thr.join();
     out_thr.join();
 }
