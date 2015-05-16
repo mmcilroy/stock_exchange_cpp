@@ -11,11 +11,14 @@ struct io_session : public std::enable_shared_from_this< io_session >
 
     void write( const io_event& );
 
-    io_session_id id();
+    session_id_t id();
 
-private:
+    void operator()( const login& );
+
+    void operator()( const resend& );
+
     io_controller& ioc_;
-    io_session_id id_;
+    session_id_t id_;
     io_event event_;
 
     tcp::socket socket_;
@@ -82,9 +85,21 @@ inline void io_session::write( const io_event& e )
         boost::asio::buffer( e.header_buffer(), e.size() - buffer_size< session >() ) );
 }
 
-inline io_session_id io_session::id()
+inline session_id_t io_session::id()
 {
     return id_;
+}
+
+inline void io_session::operator()( const login& l )
+{
+}
+
+inline void io_session::operator()( const resend& r )
+{
+    io_journal ioj( "out", true );
+    ioj.read( id_, r.sequence_from_, r.sequence_to_, [ this ]( const io_event& e ) {
+        write( e );
+    } );
 }
 
 template< typename H >
@@ -140,13 +155,13 @@ inline void io_controller::write( const io_event& e )
     });
 }
 
-inline void io_controller::closed( io_session_id id )
+inline void io_controller::closed( session_id_t id )
 {
     sessions_.erase( id );
 }
 
-inline io_session_id io_controller::alloc_id()
+inline session_id_t io_controller::alloc_id()
 {
-    static io_session_id id = 0;
+    static session_id_t id = 0;
     return id++;
 }

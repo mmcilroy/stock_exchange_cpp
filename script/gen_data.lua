@@ -1,14 +1,20 @@
 header = {
     { name='size', type='uint16_t' },
-    { name='type', type='uint16_t' }
+    { name='type', type='uint16_t' },
+    { name='sequence', type='sequence_t' }
 }
 
 session = {
-    { name='session_id', type='exchange_id_t' }
+    { name='session_id', type='session_id_t' }
 }
 
 login = {
     { name='user_id', type='char', length="16" }
+}
+
+resend = {
+    { name='sequence_from', type='sequence_t' },
+    { name='sequence_to', type='sequence_t' }
 }
 
 order_parameters = {
@@ -56,6 +62,7 @@ names = {
     'session',
     'header',
     'login',
+    'resend',
     'order_parameters',
     'order_rejected',
     'order_placed',

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "structs.hpp"
+#include "types.hpp"
 
 // payload exists only to give us a way of knowing the maximum buffer
 // size required for a payload at compile time

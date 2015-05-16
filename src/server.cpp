@@ -7,18 +7,9 @@ typedef subscriber< io_event, blocking_sequence > io_event_subscriber;
 
 
 // ----------------------------------------------------------------------------
-class io_journal
-{
-public:
-    void write( const io_event& ) { ; }
-};
-
-
-
-// ----------------------------------------------------------------------------
 void jnl_thr_fn( io_event_subscriber* sub )
 {
-    io_journal ioj;
+    io_journal ioj( "in", false );
     sub->dispatch( [&]( const io_event& ev, size_t rem )
     {
         ioj.write( ev );

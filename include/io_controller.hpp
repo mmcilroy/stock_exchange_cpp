@@ -1,10 +1,9 @@
 #pragma once
 
+#include "io_journal.hpp"
 #include "io_event.hpp"
 
 #include <boost/asio.hpp>
-
-typedef unsigned long long io_session_id;
 
 class io_session;
 
@@ -22,11 +21,11 @@ public:
     void write( const io_event& );
 
 private:
-    void closed( io_session_id );
+    void closed( session_id_t );
 
-    io_session_id alloc_id();
+    session_id_t alloc_id();
 
-    std::map< io_session_id, io_session* > sessions_;
+    std::map< session_id_t, io_session* > sessions_;
 
     boost::asio::io_service io_;
 };
