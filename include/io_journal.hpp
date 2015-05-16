@@ -3,6 +3,7 @@
 #include "io_event.hpp"
 #include "configuration.hpp"
 #include <fstream>
+#include <sstream>
 #include <memory>
 #include <vector>
 
@@ -22,7 +23,6 @@ private:
     std::vector< std::unique_ptr< std::fstream > > indexes_;
     bool write_index_;
 };
-
 
 struct index_record
 {
@@ -67,10 +67,28 @@ inline void io_journal::write( const io_event& ev )
 
     if( write_index_ )
     {
+        header h;
+        ev.unpack( h );
+
         session s;
         ev.unpack( s );
 
-        std::unique_ptr< std::fstream >& index = indexes_[ s.session_id_ ];
+        auto& index = indexes_[ s.session_id_ ];
+        if( !index )
+        {
+            std::stringstream path;
+            path << title_ << "_index_" << s.session_id_ << ".bin";
+
+            std::ofstream( path.str().c_str(), std::ofstream::binary | std::ofstream::app );
+            index = std::move( std::unique_ptr< std::fstream >( new std::fstream ) );
+            index->open( path.str().c_str(), std::fstream::in | std::fstream::out | std::fstream::binary );
+        }
+
+        index_record ir;
+        ir.index_ = h.sequence_;
+        ir.size_ = ev.size();
+        ir.offset_ = events_.tellp();
+
         index->seekp( 0, std::ios_base::end );
         //index->write( ... );
         index->flush();
