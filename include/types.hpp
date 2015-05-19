@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-typedef unsigned long long session_id_t;
+typedef uint64_t session_id_t;
 typedef uint32_t sequence_t;
 typedef uint64_t exchange_id_t;
 typedef uint32_t order_quantity_t;

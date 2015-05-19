@@ -18,9 +18,11 @@ public:
     void write( const io_event& );
 
 private:
+    std::fstream& get_index( session_id_t );
+
     std::string title_;
-    std::fstream events_;
-    std::vector< std::unique_ptr< std::fstream > > indexes_;
+    std::fstream event_file_;
+    std::vector< std::unique_ptr< std::fstream > > index_files_;
     bool write_index_;
 };
 
@@ -42,14 +44,14 @@ std::ostream& operator<<( std::ostream& o, const index_record& ir )
 
 inline io_journal::io_journal( const std::string& title, bool write_index ) :
     title_( title ),
-    indexes_( max_sessions ),
+    index_files_( max_sessions ),
     write_index_( write_index )
 {
     std::string path = title + ".bin";
     std::ofstream( path.c_str(), std::ofstream::binary | std::ofstream::app );
-    events_.open( path.c_str(), std::fstream::in | std::fstream::out | std::fstream::binary );
+    event_file_.open( path.c_str(), std::fstream::in | std::fstream::out | std::fstream::binary );
 
-    if( !events_.is_open() ) {
+    if( !event_file_.is_open() ) {
         // error
     }
 }
@@ -57,40 +59,61 @@ inline io_journal::io_journal( const std::string& title, bool write_index ) :
 template< typename F >
 inline void io_journal::read( session_id_t sess, sequence_t from, sequence_t to, F handler )
 {
+    auto& index = get_index( sess );
+
+    index_record ir;
+    index.seekg( from * sizeof( index_record ), std::ios::beg );
+    index.read( (char*)&ir, sizeof( index_record ) );
+    std::cout << ir << std::endl;
+
+    io_event e;
+
+    event_file_.seekg( ir.offset_ );
+    event_file_.read( (char*)e.session_buffer(), ir.size_ );
+
+    handler( e );
 }
 
 inline void io_journal::write( const io_event& ev )
 {
-    events_.seekp( 0, std::ios_base::end );
-    events_.write( (const char*)ev.session_buffer(), ev.size() );
-    events_.flush();
-
     if( write_index_ )
     {
         header h;
-        ev.unpack( h );
-
         session s;
+        ev.unpack( h );
         ev.unpack( s );
 
-        auto& index = indexes_[ s.session_id_ ];
-        if( !index )
-        {
-            std::stringstream path;
-            path << title_ << "_index_" << s.session_id_ << ".bin";
-
-            std::ofstream( path.str().c_str(), std::ofstream::binary | std::ofstream::app );
-            index = std::move( std::unique_ptr< std::fstream >( new std::fstream ) );
-            index->open( path.str().c_str(), std::fstream::in | std::fstream::out | std::fstream::binary );
-        }
+        auto& index = get_index( s.session_id_ );
 
         index_record ir;
-        ir.index_ = h.sequence_;
+        ir.sequence_ = h.sequence_;
+        ir.offset_ = event_file_.tellp();
         ir.size_ = ev.size();
-        ir.offset_ = events_.tellp();
 
-        index->seekp( 0, std::ios_base::end );
-        //index->write( ... );
-        index->flush();
+        std::cout << ir << std::endl;
+
+        index.seekp( ir.sequence_ * sizeof( index_record ), std::ios_base::beg );
+        index.write( (const char*)&ir, sizeof( index_record ) );
+        index.flush();
     }
+
+    event_file_.seekp( 0, std::ios_base::end );
+    event_file_.write( (const char*)ev.session_buffer(), ev.size() );
+    event_file_.flush();
+}
+
+inline std::fstream& io_journal::get_index( session_id_t sess )
+{
+    auto& index = index_files_[ sess ];
+    if( !index )
+    {
+        std::stringstream path;
+        path << title_ << "_index_" << sess << ".bin";
+
+        std::ofstream( path.str().c_str(), std::ofstream::binary | std::ofstream::app );
+        index = std::move( std::unique_ptr< std::fstream >( new std::fstream ) );
+        index->open( path.str().c_str(), std::fstream::in | std::fstream::out | std::fstream::binary );
+    }
+
+    return *index;
 }

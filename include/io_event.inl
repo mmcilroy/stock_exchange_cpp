@@ -2,6 +2,7 @@ template< typename T >
 T& io_event::pack( T& target )
 {
     header hdr;
+    unpack( hdr );
     hdr.type_ = payload_type< T >();
     hdr.size_ = buffer_size< T >();
     pack( hdr );
