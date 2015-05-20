@@ -62,16 +62,19 @@ inline void io_journal::read( session_id_t sess, sequence_t from, sequence_t to,
     auto& index = get_index( sess );
 
     index_record ir;
-    index.seekg( from * sizeof( index_record ), std::ios::beg );
-    index.read( (char*)&ir, sizeof( index_record ) );
-    std::cout << ir << std::endl;
 
-    io_event e;
+    for( sequence_t i=from; i<=to; i++ )
+    {
+        io_event e;
 
-    event_file_.seekg( ir.offset_ );
-    event_file_.read( (char*)e.session_buffer(), ir.size_ );
+        index.seekg( i * sizeof( index_record ), std::ios::beg );
+        index.read( (char*)&ir, sizeof( index_record ) );
 
-    handler( e );
+        event_file_.seekg( ir.offset_ );
+        event_file_.read( (char*)e.session_buffer(), ir.size_ );
+
+        handler( e );
+    }
 }
 
 inline void io_journal::write( const io_event& ev )
@@ -83,15 +86,12 @@ inline void io_journal::write( const io_event& ev )
         ev.unpack( h );
         ev.unpack( s );
 
-        auto& index = get_index( s.session_id_ );
-
         index_record ir;
         ir.sequence_ = h.sequence_;
         ir.offset_ = event_file_.tellp();
         ir.size_ = ev.size();
 
-        std::cout << ir << std::endl;
-
+        auto& index = get_index( s.session_id_ );
         index.seekp( ir.sequence_ * sizeof( index_record ), std::ios_base::beg );
         index.write( (const char*)&ir, sizeof( index_record ) );
         index.flush();

@@ -22,15 +22,20 @@ void jnl_thr_fn( io_event_subscriber* sub )
 // ----------------------------------------------------------------------------
 void biz_thr_fn( io_event_subscriber* sub, io_event_publisher* pub )
 {
+    std::vector< sequence_t > sequences( max_sessions );
+    for( size_t i=0; i<max_sessions; i++ ) {
+        sequences[i] = 0;
+    }
+
     sub->dispatch( [&]( const io_event& ei, size_t rem )
     {
-        header mh;
-        ei.unpack( mh );
+        header hi;
+        ei.unpack( hi );
 
         session sh;
         ei.unpack( sh );
 
-        if( mh.type_ == payload_type< place_order >() )
+        if( hi.type_ == payload_type< place_order >() )
         {
             place_order po;
             ei.unpack( po );
@@ -42,8 +47,11 @@ void biz_thr_fn( io_event_subscriber* sub, io_event_publisher* pub )
                     order_placed op;
                     op.parameters_ = po.parameters_;
                     op.transaction_id_ = po.transaction_id_;
-                    eo.pack( op );
+                    header ho;
+                    ho.sequence_ = ++sequences[ sh.session_id_ ];
                     eo.pack( sh );
+                    eo.pack( ho );
+                    eo.pack( op );
                 }
                 else
                 {
@@ -53,8 +61,11 @@ void biz_thr_fn( io_event_subscriber* sub, io_event_publisher* pub )
                     oe.exec_price_ = po.parameters_.price_;
                     oe.exec_quantity_ = 1;
                     oe.leaves_ = po.parameters_.quantity_-n;
-                    eo.pack( oe );
+                    header ho;
+                    ho.sequence_ = ++sequences[ sh.session_id_ ];
                     eo.pack( sh );
+                    eo.pack( ho );
+                    eo.pack( oe );
                 }
             } );
         }
@@ -68,8 +79,10 @@ void biz_thr_fn( io_event_subscriber* sub, io_event_publisher* pub )
 // ----------------------------------------------------------------------------
 void out_thr_fn( io_controller* ioc, io_event_subscriber* sub )
 {
+    io_journal ioj( "out", true );
     sub->dispatch( [&]( const io_event& ev, size_t rem )
     {
+        ioj.write( ev );
         ioc->write( ev );
         return false;
     } );
